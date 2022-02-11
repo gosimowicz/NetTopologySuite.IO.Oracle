@@ -3,13 +3,13 @@
 ### Reading
 ```C#
 // SdoGeometry from somewhere, e.g. OracleDataReader or OracleCommand.ExecuteScalar()
-SdoGeometry oracleGeom;
+SdoGeometry oracleUdtGeom;
 
 // Instantiate OracleGeometryReader
 var ogr = new NetTopologySuite.IO.OracleGeometryReader(NetTopologySuite.NtsGeometryServices.Instance);
 
 // Transform geometry
-var ntsGeom = ogr.Read(oracleGeom);
+var ntsGeom = ogr.Read(oracleUdtGeom);
 ```
 
 ### Writing
@@ -21,7 +21,20 @@ Geometry ntsGeom;
 var ogw = new NetTopologySuite.IO.OracleGeometryWriter();
 
 // Transform geometry
-var oracleGeom = ogw.Write(ntsGeom);
+var oracleUdtGeom = ogw.Write(ntsGeom);
+
+// Create an OracleParameter for the geometry
+var oracleParam = new OracleParameter() {
+    // Name of parameter used in SQL command (:geom)
+    ParameterName = "geom",                  
+    DbType = DbType.Object,                  
+    Direction = ParameterDirection.Input,
+    // Name of the udt type as in Oracle database
+    UdtTypeName = "MDSYS.SDO_GEOMETRY"       
+};
+
+// Assign the geometry value
+oracleParam.Value = oracleUdtGeom;
 ```
 
 ## Integration tests
