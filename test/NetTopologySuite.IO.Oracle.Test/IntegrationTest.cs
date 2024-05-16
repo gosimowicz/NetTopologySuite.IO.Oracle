@@ -75,7 +75,7 @@ namespace NetTopologySuite.IO.Oracle.Connection.Test
             // Make a new table.v
             string res = OracleHelper.CreateGeometryTable(connection, testTableName);
             // TODO this is pretty dumb, need to check exact output
-            Assert.IsTrue(!string.IsNullOrWhiteSpace(res));
+            Assert.That(!string.IsNullOrWhiteSpace(res));
 
             // Write current geometry to table.
             var geom = OracleHelper.WriteGeometryToTable(connection, wkt, testTableName);
@@ -83,7 +83,7 @@ namespace NetTopologySuite.IO.Oracle.Connection.Test
             // Read current geometry from table.
             var geom2 = OracleHelper.ReadGeometryFromTable(connection, testTableName);
 
-            Assert.IsTrue(geom.EqualsExact(geom2));
+            Assert.That(geom.EqualsExact(geom2));
 
             // Drop Geometry table
             OracleHelper.DropGeometryTable(connection, testTableName);

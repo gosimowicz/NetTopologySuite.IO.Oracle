@@ -26,7 +26,7 @@ namespace NetTopologySuite.IO.Oracle.Test
 
             var t = new OracleGeometryWriter().Write(geom1);
             var geom3 = or.Read(t);
-            Assert.IsTrue(geom2.EqualsExact(geom3));
+            Assert.That(geom2.EqualsExact(geom3));
         }
 
         /// <summary>
@@ -50,6 +50,8 @@ namespace NetTopologySuite.IO.Oracle.Test
         [TestCase("MULTIPOLYGON(((10 10,20 10,20 20,10 20,10 10),(5 5,5 6,6 6,6 5,5 5)),((10 10,20 10,20 20,20 10,10 10),(5 5,5 6,6 6,6 5,5 5)))", -1)]
         [TestCase("MULTIPOLYGON Z(((10 10 0,20 10 0,20 20 0,10 20 0,10 10 0),(5 5 0,5 6 0,6 6 0,6 5 0,5 5 0)),((10 10 0,20 10 0,20 20 0,20 10 0,10 10 0),(5 5 0,5 6 0,6 6 0,6 5 0,5 5 0)))", -1)]
         [TestCase("MULTILINESTRING((10 10,20 10,20 20,20 10),(5 5,5 6,6 6,6 5))", -1)]
+        [TestCase("MULTILINESTRING((1 1, 2 1, 3 1), (1 2, 2 2, 3 2, 4 2), (1 3, 1 3, 3 3, 4 3))", -1)]
+        [TestCase("MULTILINESTRING((1 1, 2 1, 3 1), (1 2, 2 2, 3 2, 4 2), (1 3, 1 3, 3 3, 4 3),(1 5, 2 5, 3 5),(1 6, 2 6, 3 6, 4 6))", -1)]
         [TestCase("MULTILINESTRING Z((10 10 5,20 10 5,20 20 0,20 10 0,10 10 0),(5 5 0,5 6 0,6 6 0,6 5 0,5 5 0))", -1)]
         [TestCase("GEOMETRYCOLLECTION(POLYGON((10 10,20 10,20 20,10 20,10 10)),POLYGON((30 10,40 10,40 20,30 20,30 10)))", -1)]
         [TestCase("GEOMETRYCOLLECTION(POLYGON((10 10,20 10,20 20,10 20,10 10),(5 5,5 6,6 6,6 5,5 5)))", -1)]
@@ -66,12 +68,12 @@ namespace NetTopologySuite.IO.Oracle.Test
             geom.SRID = srid;
             regeom.SRID = srid;
 
-            Assert.IsTrue(geom.EqualsExact(regeom));
-            Assert.AreEqual(parsed, reparsed);
+            Assert.That(geom.EqualsExact(regeom));
+            Assert.That(reparsed, Is.EqualTo(parsed));
 
             var t = new OracleGeometryWriter().Write(regeom);
             var regeom3 = or.Read(t);
-            Assert.IsTrue(geom.EqualsExact(regeom3));
+            Assert.That(geom.EqualsExact(regeom3));
         }
 
         /// <summary>
@@ -93,7 +95,7 @@ namespace NetTopologySuite.IO.Oracle.Test
 
             var t = new OracleGeometryWriter().Write(geom);
             var regeom = or.Read(t);
-            Assert.IsTrue(result.EqualsExact(regeom));
+            Assert.That(result.EqualsExact(regeom));
         }
 
     }

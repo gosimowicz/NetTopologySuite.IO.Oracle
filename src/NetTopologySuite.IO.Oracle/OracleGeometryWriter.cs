@@ -15,17 +15,8 @@ namespace NetTopologySuite.IO
         /// <summary>
         /// Property for spatial reference system
         /// </summary>
+        /// <remarks>Only used when set to a value other than <c>-1</c>. Otherwise the SRID property of the geometry to write is used.</remarks>
         public int SRID { get; set; } = SridNull;
-
-        private int Dimension(Geometry geom)
-        {
-            return double.IsNaN(geom.Coordinate.Z) ? 2 : 3;
-        }
-
-        private int GType(Geometry geom)
-        {
-            return Dimension(geom) * 1000 + (int)Template(geom);
-        }
 
         /// <summary>
         /// Converts an Geometry to the corresponding Oracle UDT of type SdoGeometry
@@ -70,31 +61,33 @@ namespace NetTopologySuite.IO
 
         private SdoGeometry Write(Point point)
         {
-            var elemInfoList = new List<double>();
+            int gtype = GType(point, out int dimension);
+            var elemInfoList = new List<double>(dimension);
             var ordinateList = new List<double>();
 
-            ProcessPoint(point, elemInfoList, ordinateList, 1);
+            ProcessPoint(point, dimension, elemInfoList, ordinateList, 1);
 
             return new SdoGeometry()
             {
-                SdoGtype = GType(point),
-                Sdo_Srid = point.SRID,
+                SdoGtype = gtype,
+                Sdo_Srid = SRID != SridNull ? SRID : point.SRID,
                 ElemArray = elemInfoList.ToArray(),
                 OrdinatesArray = ordinateList.ToArray(),
             };
         }
 
-        private SdoGeometry Write(LineString line)
+        private SdoGeometry Write(LineString lineString)
         {
-            var elemInfoList = new List<double>();
+            int gtype = GType(lineString, out int dimension);
+            var elemInfoList = new List<double>(dimension * lineString.NumPoints);
             var ordinateList = new List<double>();
 
-            ProcessLinear(line, elemInfoList, ordinateList, 1);
+            ProcessLinear(lineString, dimension, elemInfoList, ordinateList, 1);
 
             return new SdoGeometry()
             {
-                SdoGtype = GType(line),
-                Sdo_Srid = line.SRID,
+                SdoGtype = gtype,
+                Sdo_Srid = SRID != SridNull ? SRID : lineString.SRID,
                 ElemArray = elemInfoList.ToArray(),
                 OrdinatesArray = ordinateList.ToArray(),
             };
@@ -102,15 +95,16 @@ namespace NetTopologySuite.IO
 
         private SdoGeometry Write(Polygon polygon)
         {
-            var elemInfoList = new List<double>();
+            int gtype = GType(polygon, out int dimension);
+            var elemInfoList = new List<double>(dimension * polygon.NumPoints);
             var ordinateList = new List<double>();
 
-            ProcessPolygon(polygon, elemInfoList, ordinateList, 1);
+            ProcessPolygon(polygon, dimension, elemInfoList, ordinateList, 1);
 
             return new SdoGeometry
             {
-                SdoGtype = GType(polygon),
-                Sdo_Srid = polygon.SRID,
+                SdoGtype = gtype,
+                Sdo_Srid = SRID != SridNull ? SRID : polygon.SRID,
                 ElemArray = elemInfoList.ToArray(),
                 OrdinatesArray = ordinateList.ToArray(),
             };
@@ -118,15 +112,16 @@ namespace NetTopologySuite.IO
 
         private SdoGeometry Write(MultiPoint multiPoint)
         {
-            var elemInfoList = new List<double>();
+            int gtype = GType(multiPoint, out int dimension);
+            var elemInfoList = new List<double>(dimension * multiPoint.NumPoints);
             var ordinateList = new List<double>();
 
-            ProcessMultiPoint(multiPoint, elemInfoList, ordinateList, 1);
+            ProcessMultiPoint(multiPoint, dimension, elemInfoList, ordinateList, 1);
 
             return new SdoGeometry
             {
-                SdoGtype = GType(multiPoint),
-                Sdo_Srid = multiPoint.SRID,
+                SdoGtype = gtype,
+                Sdo_Srid = SRID != SridNull ? SRID : multiPoint.SRID,
                 ElemArray = elemInfoList.ToArray(),
                 OrdinatesArray = ordinateList.ToArray(),
             };
@@ -134,15 +129,16 @@ namespace NetTopologySuite.IO
 
         private SdoGeometry Write(MultiLineString multiLineString)
         {
-            var elemInfoList = new List<double>();
+            int gtype = GType(multiLineString, out int dimension);
+            var elemInfoList = new List<double>(dimension * multiLineString.NumPoints);
             var ordinateList = new List<double>();
 
-            ProcessMultiLineString(multiLineString, elemInfoList, ordinateList, 1);
+            ProcessMultiLineString(multiLineString, dimension, elemInfoList, ordinateList, 1);
 
             return new SdoGeometry
             {
-                SdoGtype = GType(multiLineString),
-                Sdo_Srid = multiLineString.SRID,
+                SdoGtype = gtype,
+                Sdo_Srid = SRID != SridNull ? SRID : multiLineString.SRID,
                 ElemArray = elemInfoList.ToArray(),
                 OrdinatesArray = ordinateList.ToArray(),
             };
@@ -150,15 +146,16 @@ namespace NetTopologySuite.IO
 
         private SdoGeometry Write(MultiPolygon multiPolygon)
         {
-            var elemInfoList = new List<double>();
+            int gtype = GType(multiPolygon, out int dimension);
+            var elemInfoList = new List<double>(dimension * multiPolygon.NumPoints);
             var ordinateList = new List<double>();
-
-            ProcessMultiPolygon(multiPolygon, elemInfoList, ordinateList, 1);
+            
+            ProcessMultiPolygon(multiPolygon, dimension, elemInfoList, ordinateList, 1);
 
             return new SdoGeometry
             {
-                SdoGtype = GType(multiPolygon),
-                Sdo_Srid = multiPolygon.SRID,
+                SdoGtype = gtype,
+                Sdo_Srid = SRID != SridNull ? SRID : multiPolygon.SRID,
                 ElemArray = elemInfoList.ToArray(),
                 OrdinatesArray = ordinateList.ToArray(),
             };
@@ -171,33 +168,35 @@ namespace NetTopologySuite.IO
             int pos = 1;
 
             int cnt = geometryCollection.NumGeometries;
+            int gtype = GType(geometryCollection, out int dimension);
+
             for (int i = 0; i < cnt; i++)
             {
                 var geom = geometryCollection.GetGeometryN(i);
                 switch (geom.OgcGeometryType)
                 {
                     case OgcGeometryType.Point:
-                        pos = ProcessPoint((Point)geom, elemInfoList, ordinateList, pos);
+                        pos = ProcessPoint((Point)geom, dimension, elemInfoList, ordinateList, pos);
                         break;
 
                     case OgcGeometryType.LineString:
-                        pos = ProcessLinear((LineString)geom, elemInfoList, ordinateList, pos);
+                        pos = ProcessLinear((LineString)geom, dimension, elemInfoList, ordinateList, pos);
                         break;
 
                     case OgcGeometryType.Polygon:
-                        pos = ProcessPolygon((Polygon)geom, elemInfoList, ordinateList, pos);
+                        pos = ProcessPolygon((Polygon)geom, dimension, elemInfoList, ordinateList, pos);
                         break;
 
                     case OgcGeometryType.MultiPoint:
-                        pos = ProcessMultiPoint((MultiPoint)geom, elemInfoList, ordinateList, pos);
+                        pos = ProcessMultiPoint((MultiPoint)geom, dimension, elemInfoList, ordinateList, pos);
                         break;
 
                     case OgcGeometryType.MultiLineString:
-                        pos = ProcessMultiLineString((MultiLineString)geom, elemInfoList, ordinateList, pos);
+                        pos = ProcessMultiLineString((MultiLineString)geom, dimension, elemInfoList, ordinateList, pos);
                         break;
 
                     case OgcGeometryType.MultiPolygon:
-                        pos = ProcessMultiPolygon((MultiPolygon)geom, elemInfoList, ordinateList, pos);
+                        pos = ProcessMultiPolygon((MultiPolygon)geom, dimension, elemInfoList, ordinateList, pos);
                         break;
 
                     default:
@@ -207,30 +206,30 @@ namespace NetTopologySuite.IO
 
             return new SdoGeometry
             {
-                SdoGtype = GType(geometryCollection),
-                Sdo_Srid = geometryCollection.SRID,
+                SdoGtype = gtype,
+                Sdo_Srid = SRID != SridNull ? SRID : geometryCollection.SRID,
                 ElemArray = elemInfoList.ToArray(),
                 OrdinatesArray = ordinateList.ToArray(),
             };
         }
 
-        private int ProcessPoint(Point point, List<double> elemInfoList, List<double> ordinateList, int pos)
+        private static int ProcessPoint(Point point, int dimension, List<double> elemInfoList, List<double> ordinateList, int pos)
         {
             elemInfoList.Add(pos);
             elemInfoList.Add((int)SdoEType.Coordinate);
             elemInfoList.Add(1);
-            return pos + AddOrdinates(point.CoordinateSequence, ordinateList);
+            return pos + AddOrdinates(point.CoordinateSequence, dimension, ordinateList);
         }
 
-        private int ProcessLinear(LineString line, List<double> elemInfoList, List<double> ordinateList, int pos)
+        private static int ProcessLinear(LineString line, int dimension, List<double> elemInfoList, List<double> ordinateList, int pos)
         {
             elemInfoList.Add(pos);
             elemInfoList.Add((int)SdoEType.Line);
             elemInfoList.Add(1);
-            return pos + AddOrdinates(line.CoordinateSequence, ordinateList);
+            return AddOrdinates(line.CoordinateSequence, dimension, ordinateList);
         }
 
-        private int ProcessPolygon(Polygon polygon, List<double> elemInfoList, List<double> ordinateList, int pos)
+        private static int ProcessPolygon(Polygon polygon, int dimension, List<double> elemInfoList, List<double> ordinateList, int pos)
         {
             elemInfoList.Add(pos);
             elemInfoList.Add((int)SdoEType.PolygonExterior);
@@ -238,8 +237,8 @@ namespace NetTopologySuite.IO
 
             var exteriorRingCoords = polygon.ExteriorRing.CoordinateSequence;
             pos += Algorithm.Orientation.IsCCW(exteriorRingCoords)
-                ? AddOrdinates(exteriorRingCoords, ordinateList)
-                : AddOrdinatesInReverse(exteriorRingCoords, ordinateList);
+                ? AddOrdinates(exteriorRingCoords, dimension, ordinateList)
+                : AddOrdinatesInReverse(exteriorRingCoords, dimension, ordinateList);
 
             int interiorRingCount = polygon.NumInteriorRings;
             for (int i = 0; i < interiorRingCount; i++)
@@ -250,14 +249,14 @@ namespace NetTopologySuite.IO
 
                 var interiorRingCoords = polygon.GetInteriorRingN(i).CoordinateSequence;
                 pos += Algorithm.Orientation.IsCCW(interiorRingCoords)
-                    ? AddOrdinatesInReverse(interiorRingCoords, ordinateList)
-                    : AddOrdinates(interiorRingCoords, ordinateList);
+                    ? AddOrdinatesInReverse(interiorRingCoords, dimension, ordinateList)
+                    : AddOrdinates(interiorRingCoords, dimension, ordinateList);
             }
 
             return pos;
         }
 
-        private int ProcessMultiPoint(MultiPoint multiPoint, List<double> elemInfoList, List<double> ordinateList, int pos)
+        private static int ProcessMultiPoint(MultiPoint multiPoint, int dimension, List<double> elemInfoList, List<double> ordinateList, int pos)
         {
             int cnt = multiPoint.NumGeometries;
 
@@ -271,39 +270,38 @@ namespace NetTopologySuite.IO
             for (int i = 0; i < cnt; i++)
             {
                 var point = (Point)multiPoint.GetGeometryN(i);
-                pos += AddOrdinates(point.CoordinateSequence, ordinateList);
+                pos += AddOrdinates(point.CoordinateSequence, dimension, ordinateList);
             }
 
             return pos;
         }
 
-        private int ProcessMultiLineString(MultiLineString multiLineString, List<double> elemInfoList, List<double> ordinateList, int pos)
+        private static int ProcessMultiLineString(MultiLineString multiLineString, int dimension, List<double> elemInfoList, List<double> ordinateList, int pos)
         {
             int cnt = multiLineString.NumGeometries;
             for (int i = 0; i < cnt; i++)
             {
                 var line = (LineString)multiLineString.GetGeometryN(i);
-                pos += ProcessLinear(line, elemInfoList, ordinateList, pos);
+                pos += ProcessLinear(line, dimension, elemInfoList, ordinateList, pos);
             }
 
             return pos;
         }
 
-        private int ProcessMultiPolygon(MultiPolygon multiPolygon, List<double> elemInfoList, List<double> ordinateList, int pos)
+        private static int ProcessMultiPolygon(MultiPolygon multiPolygon, int dimension, List<double> elemInfoList, List<double> ordinateList, int pos)
         {
             int cnt = multiPolygon.NumGeometries;
             for (int i = 0; i < cnt; i++)
             {
                 var poly = (Polygon)multiPolygon.GetGeometryN(i);
-                pos = ProcessPolygon(poly, elemInfoList, ordinateList, pos);
+                pos = ProcessPolygon(poly, dimension, elemInfoList, ordinateList, pos);
             }
 
             return pos;
         }
 
-        private int AddOrdinates(CoordinateSequence sequence, List<double> ords)
-        {
-            int dimension = sequence.Dimension;
+        private static int AddOrdinates(CoordinateSequence sequence, int dimension, List<double> ords)
+        {            
             int numOfPoints = sequence.Count;
             for (int i = 0; i < numOfPoints; i++)
             {
@@ -318,9 +316,8 @@ namespace NetTopologySuite.IO
             return numOfPoints * dimension;
         }
 
-        private int AddOrdinatesInReverse(CoordinateSequence sequence, List<double> ords)
-        {
-            int dimension = sequence.Dimension;
+        private static int AddOrdinatesInReverse(CoordinateSequence sequence, int dimension, List<double> ords)
+        {            
             int numOfPoints = sequence.Count;
 
             for (int i = numOfPoints - 1; i >= 0; i--)
@@ -336,7 +333,20 @@ namespace NetTopologySuite.IO
             return numOfPoints * dimension;
         }
 
-        private SdoGTemplate Template(Geometry geom)
+        private static int GType(Geometry geom, out int dimension)
+        {
+            dimension = Dimension(geom);
+            return dimension * 1000 + (int)Template(geom);
+        }
+
+        private static int Dimension(Geometry geom)
+        {
+            var sdd = new SpatialDimensionDeterminator();
+            geom.Apply(sdd);
+            return sdd.NumSpatialDimensions;
+        }
+
+        private static SdoGTemplate Template(Geometry geom)
         {
             switch (geom)
             {
@@ -370,6 +380,18 @@ namespace NetTopologySuite.IO
                         + "(Limitied to Point, Line, Polygon, GeometryCollection, MultiPoint,"
                         + " MultiLineString and MultiPolygon)");
             }
+        }
+
+        private class SpatialDimensionDeterminator : IEntireCoordinateSequenceFilter
+        {
+            public void Filter(CoordinateSequence sequence)
+            {
+                NumSpatialDimensions = sequence.Dimension - sequence.Measures;
+                Done = true;
+            }
+            public int NumSpatialDimensions { get; private set; } = 2;
+            public bool Done { get; private set; }
+            public bool GeometryChanged => false;
         }
     }
 }
