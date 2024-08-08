@@ -38,6 +38,7 @@ namespace NetTopologySuite.IO.Oracle.Test
         [TestCase("POINT(10 10)", 4326)]
         [TestCase("POINT Z(10 10 0)", -1)]
         [TestCase("POINT Z(10 10 20)", -1)]
+        [TestCase("MULTIPOINT(11 12)", -1)]
         [TestCase("MULTIPOINT(11 12, 20 20)", -1)]
         [TestCase("MULTIPOINT Z(11 12 12, 20 20 20)", -1)]
         [TestCase("LINESTRING(10 10,20 20,50 50,34 34)", -1)]
@@ -82,6 +83,7 @@ namespace NetTopologySuite.IO.Oracle.Test
         /// <param name="wkt"></param>
         /// <param name="wktresult"></param>
         /// <param name="srid"></param>
+        [TestCase("GEOMETRYCOLLECTION(MULTIPOINT(11 12))", "GEOMETRYCOLLECTION(MULTIPOINT(11 12))", - 1)]
         [TestCase("GEOMETRYCOLLECTION(MULTIPOINT(11 12, 20 20))", "GEOMETRYCOLLECTION(MULTIPOINT(11 12, 20 20))", - 1)]
         [TestCase("GEOMETRYCOLLECTION(MULTIPOLYGON(((10 10,20 10,20 20,10 20,10 10),(5 5,5 6,6 6,6 5,5 5)),((10 10,20 10,20 20,20 10,10 10),(5 5,5 6,6 6,6 5,5 5))))", "GEOMETRYCOLLECTION(POLYGON((10 10,20 10,20 20,10 20,10 10),(5 5,5 6,6 6,6 5,5 5)),POLYGON((10 10,20 10,20 20,20 10,10 10),(5 5,5 6,6 6,6 5,5 5)))", - 1)]
         [TestCase("GEOMETRYCOLLECTION(MULTILINESTRING((10 10,20 10,20 20,10 20,10 10),(5 5,5 6,6 6,6 5,5 5)))", "GEOMETRYCOLLECTION(LINESTRING(10 10,20 10,20 20,10 20,10 10),LINESTRING(5 5,5 6,6 6,6 5,5 5))", -1)]
