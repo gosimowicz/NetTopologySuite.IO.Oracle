@@ -8,7 +8,6 @@ namespace NetTopologySuite.IO.Sdo
         Coordinate = 1,
         Line = 2,
         Polygon = 3,
-        Multipoint = 4,
 
         PolygonExterior = 1003,
         PolygonInterior = 2003

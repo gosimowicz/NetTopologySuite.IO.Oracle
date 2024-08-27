@@ -264,7 +264,7 @@ namespace NetTopologySuite.IO
             // just ProcessPoint for each point, since that would append to elemInfoList multiple
             // times.  instead, elemInfoList gets incremented just once.  *shrugs*.
             elemInfoList.Add(pos);
-            elemInfoList.Add((int)SdoEType.Multipoint);
+            elemInfoList.Add((int)SdoEType.Coordinate);
             elemInfoList.Add(cnt);
 
             for (int i = 0; i < cnt; i++)

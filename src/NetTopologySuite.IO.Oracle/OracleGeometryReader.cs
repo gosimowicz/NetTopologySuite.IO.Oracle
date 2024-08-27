@@ -276,9 +276,6 @@ namespace NetTopologySuite.IO
                         }
 
                         break;
-                    case SdoEType.Multipoint:
-                        geom = CreateMultiPoint(factory, dim, lrs, elemInfo, i, coords);
-                        break;
                     case SdoEType.Line:
                         geom = CreateLine(factory, dim, lrs, elemInfo, i, coords);
 
@@ -410,7 +407,7 @@ namespace NetTopologySuite.IO
             if (!(sOffset >= 1) || !(sOffset <= coords.Count))
                 throw new ArgumentException("ELEM_INFO STARTING_OFFSET " + sOffset +
                                             " inconsistent with ORDINATES length " + coords.Count);
-            if (etype != SdoEType.Coordinate && etype != SdoEType.Multipoint)
+            if (etype != SdoEType.Coordinate)
                 throw new ArgumentException("ETYPE " + etype + " inconsistent with expected POINT");
             if (interpretation == 0)
             {
